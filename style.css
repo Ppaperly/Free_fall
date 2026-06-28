@@ -307,3 +307,6 @@ button {
     min-height: 36px;
   }
 }
+[hidden] {
+  display: none !important;
+}
