@@ -1,3 +1,6 @@
+[hidden] {
+  display: none !important;
+}
 * {
   box-sizing: border-box;
 }
@@ -306,7 +309,4 @@ button {
   #ballSelect {
     min-height: 36px;
   }
-}
-[hidden] {
-  display: none !important;
 }
