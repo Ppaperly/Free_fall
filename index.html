@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>자유 낙하 시뮬레이션</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="top-panel">
+      <div class="title-box">
+        <h1>자유 낙하 시뮬레이션</h1>
+        <p>물체를 선택한 뒤 시작 버튼을 누르세요.</p>
+      </div>
+
+      <div class="condition-box" aria-label="실험 조건">
+        <div>
+          <span class="label">높이</span>
+          <strong>176.4 m</strong>
+        </div>
+        <div>
+          <span class="label">중력가속도</span>
+          <strong>9.8 m/s²</strong>
+        </div>
+      </div>
+
+      <div class="control-box">
+        <label for="ballSelect">물체 선택</label>
+        <select id="ballSelect">
+          <option value="small">작은 쇠구슬 · 1 kg</option>
+          <option value="medium" selected>중간 크기 쇠구슬 · 2 kg</option>
+          <option value="large">큰 쇠구슬 · 3 kg</option>
+        </select>
+
+        <div class="button-row">
+          <button id="startButton" type="button">시작</button>
+          <button id="resetButton" type="button">초기화</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="simulation-panel" aria-label="자유 낙하 화면">
+      <svg id="stage" viewBox="0 0 360 720" role="img" aria-label="자유 낙하 다중 섬광 사진 형태의 시뮬레이션">
+        <rect x="0" y="0" width="360" height="720" class="sky" />
+
+        <line x1="42" y1="72" x2="318" y2="72" class="start-line" />
+        <text x="42" y="55" class="scene-text">출발점</text>
+
+        <line x1="42" y1="650" x2="318" y2="650" class="ground-line" />
+        <rect x="42" y="650" width="276" height="18" class="ground" />
+        <text x="42" y="692" class="scene-text">바닥</text>
+
+        <line x1="180" y1="72" x2="180" y2="650" class="fall-guide" />
+
+        <g id="markerLayer"></g>
+
+        <circle id="activeBall" cx="180" cy="72" r="11" class="active-ball" />
+      </svg>
+    </section>
+  </main>
+
+  <div id="modalOverlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle">측정 정보</h2>
+      <div id="modalContent" class="modal-content"></div>
+      <button id="closeModalButton" type="button" class="close-button">닫기</button>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
