@@ -174,19 +174,6 @@
       font-weight: 900;
     }
 
-    .time-label-box {
-      fill: #ece7ff;
-      stroke: #8d79d1;
-      stroke-width: 1.5;
-    }
-
-    .time-label {
-      fill: #1f1833;
-      font-size: 15px;
-      font-weight: 900;
-      dominant-baseline: middle;
-    }
-
     .marker {
       cursor: pointer;
     }
@@ -199,17 +186,29 @@
       fill: #7b7688;
       stroke: #262235;
       stroke-width: 2;
-      opacity: 0.72;
+      opacity: 0.62;
     }
 
     .record-ball.start-point {
-      opacity: 1;
+      opacity: 0.95;
+    }
+
+    .time-label {
+      fill: #1f1833;
+      font-size: 14px;
+      font-weight: 900;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: #ffffff;
+      stroke-width: 4px;
+      stroke-linejoin: round;
     }
 
     .moving-ball {
       fill: #2b263a;
       stroke: #090711;
       stroke-width: 2.5;
+      pointer-events: none;
     }
 
     .modal-layer {
@@ -355,18 +354,18 @@
       <svg id="stage" viewBox="0 0 360 720" aria-label="자유 낙하 시뮬레이션 화면">
         <rect x="0" y="0" width="360" height="720" class="background"></rect>
 
-        <line x1="44" y1="72" x2="316" y2="72" class="start-line"></line>
-        <text x="44" y="50" class="scene-label">출발점</text>
+        <line id="startLine" x1="44" y1="88" x2="316" y2="88" class="start-line"></line>
+        <text x="44" y="62" class="scene-label">출발점</text>
 
-        <line x1="180" y1="72" x2="180" y2="650" class="guide-line"></line>
+        <line x1="180" y1="88" x2="180" y2="650" class="guide-line"></line>
 
         <g id="markers"></g>
 
-        <line x1="44" y1="650" x2="316" y2="650" class="ground-line"></line>
+        <line id="groundLine" x1="44" y1="650" x2="316" y2="650" class="ground-line"></line>
         <rect x="44" y="650" width="272" height="18" class="ground-block"></rect>
         <text x="44" y="695" class="scene-label">바닥</text>
 
-        <circle id="movingBall" cx="180" cy="72" r="11" class="moving-ball"></circle>
+        <circle id="movingBall" cx="180" cy="77" r="11" class="moving-ball"></circle>
       </svg>
     </section>
   </main>
@@ -383,8 +382,8 @@
     const HEIGHT = 176.4;
     const TOTAL_TIME = 6;
 
-    const TOP_Y = 72;
-    const BOTTOM_Y = 650;
+    const START_BOTTOM_Y = 88;
+    const GROUND_Y = 650;
     const CENTER_X = 180;
 
     const balls = {
@@ -428,13 +427,20 @@
     let running = false;
     let animationId = null;
     let startTime = null;
+    let latestRevealTime = 0;
 
     function currentBall() {
       return balls[currentBallKey];
     }
 
-    function yFromDistance(distance) {
-      return TOP_Y + (distance / HEIGHT) * (BOTTOM_Y - TOP_Y);
+    function bottomYFromDistance(distance) {
+      const ratio = distance / HEIGHT;
+      return START_BOTTOM_Y + ratio * (GROUND_Y - START_BOTTOM_Y);
+    }
+
+    function centerYFromDistance(distance) {
+      const ball = currentBall();
+      return bottomYFromDistance(distance) - ball.radius;
     }
 
     function numberText(value) {
@@ -449,62 +455,48 @@
       return document.createElementNS("http://www.w3.org/2000/svg", tag);
     }
 
-    function labelShift(time) {
-      if (time === 0) return -26;
-      if (time === 1) return 20;
-      return 0;
-    }
-
     function setMovingBall(distance) {
       const ball = currentBall();
       movingBall.setAttribute("r", ball.radius);
-      movingBall.setAttribute("cy", yFromDistance(distance));
+      movingBall.setAttribute("cy", centerYFromDistance(distance));
     }
 
-    function drawRecords() {
+    function drawRecords(revealTime) {
       markers.innerHTML = "";
 
       const ball = currentBall();
 
       records.forEach((record) => {
-        const y = yFromDistance(record.distance);
-        const shiftedY = y + labelShift(record.time);
+        const centerY = centerYFromDistance(record.distance);
+        const visible = record.time <= revealTime;
 
         const group = svgElement("g");
         group.classList.add("marker");
         group.setAttribute("role", "button");
         group.setAttribute("tabindex", "0");
+        group.setAttribute("data-time", String(record.time));
+        group.style.display = visible ? "block" : "none";
 
         const hit = svgElement("circle");
         hit.setAttribute("class", "hit-area");
         hit.setAttribute("cx", CENTER_X);
-        hit.setAttribute("cy", y);
-        hit.setAttribute("r", Math.max(28, ball.radius + 14));
+        hit.setAttribute("cy", centerY);
+        hit.setAttribute("r", Math.max(30, ball.radius + 16));
 
         const circle = svgElement("circle");
         circle.setAttribute("class", record.time === 0 ? "record-ball start-point" : "record-ball");
         circle.setAttribute("cx", CENTER_X);
-        circle.setAttribute("cy", y);
+        circle.setAttribute("cy", centerY);
         circle.setAttribute("r", ball.radius);
-
-        const labelBox = svgElement("rect");
-        labelBox.setAttribute("class", "time-label-box");
-        labelBox.setAttribute("x", 230);
-        labelBox.setAttribute("y", shiftedY - 15);
-        labelBox.setAttribute("width", 58);
-        labelBox.setAttribute("height", 30);
-        labelBox.setAttribute("rx", 10);
 
         const label = svgElement("text");
         label.setAttribute("class", "time-label");
-        label.setAttribute("x", 259);
-        label.setAttribute("y", shiftedY + 1);
-        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("x", CENTER_X + ball.radius + 18);
+        label.setAttribute("y", centerY + 1);
         label.textContent = `${record.time}초`;
 
         group.appendChild(hit);
         group.appendChild(circle);
-        group.appendChild(labelBox);
         group.appendChild(label);
 
         group.addEventListener("click", () => {
@@ -519,6 +511,22 @@
         });
 
         markers.appendChild(group);
+      });
+    }
+
+    function revealRecordsUpTo(timeValue) {
+      latestRevealTime = timeValue;
+
+      const groups = markers.querySelectorAll(".marker");
+
+      groups.forEach((group) => {
+        const recordTime = Number(group.getAttribute("data-time"));
+
+        if (recordTime <= timeValue) {
+          group.style.display = "block";
+        } else {
+          group.style.display = "none";
+        }
       });
     }
 
@@ -566,10 +574,18 @@
       }
 
       const elapsed = Math.min((now - startTime) / 1000, TOTAL_TIME);
-      const progress = elapsed / TOTAL_TIME;
-      const distance = HEIGHT * progress * progress;
+      const distance = 4.9 * elapsed * elapsed;
 
       setMovingBall(distance);
+
+      records.forEach((record) => {
+        if (elapsed >= record.time + 0.03) {
+          const marker = markers.querySelector(`[data-time="${record.time}"]`);
+          if (marker) {
+            marker.style.display = "block";
+          }
+        }
+      });
 
       if (elapsed < TOTAL_TIME) {
         animationId = requestAnimationFrame(animate);
@@ -577,6 +593,7 @@
         running = false;
         startTime = null;
         setMovingBall(HEIGHT);
+        revealRecordsUpTo(6);
       }
     }
 
@@ -588,6 +605,9 @@
 
       running = true;
       startTime = null;
+      latestRevealTime = 0;
+
+      drawRecords(0);
       setMovingBall(0);
       animationId = requestAnimationFrame(animate);
     }
@@ -598,16 +618,16 @@
       running = false;
       startTime = null;
       animationId = null;
+      latestRevealTime = 0;
 
       closeModal();
+      drawRecords(0);
       setMovingBall(0);
     }
 
     ballSelect.addEventListener("change", () => {
       currentBallKey = ballSelect.value;
-      closeModal();
-      drawRecords();
-      setMovingBall(0);
+      resetSimulation();
     });
 
     startBtn.addEventListener("click", startSimulation);
@@ -626,7 +646,7 @@
       }
     });
 
-    drawRecords();
+    drawRecords(0);
     setMovingBall(0);
     closeModal();
   </script>
